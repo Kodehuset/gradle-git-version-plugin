@@ -33,7 +33,6 @@ class GitVersionPlugin implements Plugin<Project> {
             } else {
                 project.version = specifiedVersion
             }
-            println project.version
         } catch (Exception e) {
             println "Unable to get version from git: $e.message"
         }
