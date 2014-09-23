@@ -4,26 +4,45 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 /**
- * Gradle plugin that will set the project version (if not already set) by inspecting the currently checked out git
- * context.
+ * Gradle plugin that will set the project version by inspecting the currently checked out git
+ * context. If the project version property is already set, the plugin will only override it from git if you are
+ * building from a tag and the version contains -SNAPSHOT.
  */
 class GitVersionPlugin implements Plugin<Project> {
+
+    static class GitVersion {
+        String version
+        boolean fromTag
+    }
+
 
     @Override
     void apply(Project project) {
 
-        if (project.version != 'unspecified') {
-            return
-        }
         try {
-            project.version = versionFromGit
+            GitVersion gitVersion = getVersionFromGit()
+
+            println ""
+            println project.version
+            String specifiedVersion = project.version
+
+            if (specifiedVersion == 'unspecified') {
+                project.version = gitVersion.version
+            } else if (specifiedVersion.contains('-SNAPSHOT')) {
+                if (gitVersion.fromTag) {
+                    project.version = gitVersion.version
+                }
+            } else {
+                project.version = specifiedVersion
+            }
+            println project.version
         } catch (Exception e) {
             println "Unable to get version from git: $e.message"
         }
     }
 
 
-    static String getVersionFromGit() {
+    static GitVersion getVersionFromGit() {
         // 'git branch' typically has output like:
         //
         //   4.3
@@ -36,17 +55,19 @@ class GitVersionPlugin implements Plugin<Project> {
         // branch name remains.
         def version = execute("git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \\(.*\\)/\\1/'")
 
+        boolean fromTag = false
         if (version == "(no branch)" || version.contains("detached from")) {
             // if the version contains 'no branch' or 'detached from', we are (always?) on a tag. If that is the case,
             // use the tag name as version name (with a few modifications - see below).
             version = execute("git describe --tags 2> /dev/null")
+            fromTag = true
         } else {
             // we are on a branch. Use the branch name + "-SNAPSHOT" as version name
             version += "-SNAPSHOT"
         }
         version = version.replaceAll("/", "-")
         version = version.replace('version-', '')
-        version
+        new GitVersion(version: version, fromTag: fromTag)
     }
 
 
