@@ -22,8 +22,6 @@ class GitVersionPlugin implements Plugin<Project> {
         try {
             GitVersion gitVersion = getVersionFromGit()
 
-            println ""
-            println project.version
             String specifiedVersion = project.version
 
             if (specifiedVersion == 'unspecified') {
