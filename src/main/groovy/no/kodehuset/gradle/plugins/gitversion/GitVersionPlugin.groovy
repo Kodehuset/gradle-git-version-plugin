@@ -53,7 +53,7 @@ class GitVersionPlugin implements Plugin<Project> {
         def version = execute("git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \\(.*\\)/\\1/'")
 
         boolean fromTag = false
-        if (version == "(no branch)" || version.contains("detached from")) {
+        if (version == "(no branch)" || version.contains("detached from") || version.contains("detached at")) {
             // if the version contains 'no branch' or 'detached from', we are (always?) on a tag. If that is the case,
             // use the tag name as version name (with a few modifications - see below).
             version = execute("git describe --tags 2> /dev/null")
